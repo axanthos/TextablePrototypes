@@ -50,7 +50,7 @@ Créer un widget pour Orange Textable (v1.5.2) permettant l'importation de pièc
 2.2 Fonctionnalités minimales
 =============================
 
-image:: images/theatre_classique_minimal_version.png
+.. image:: images/theatre_classique_minimal_version.png
 
 * permettre le choix et l'importation de multiples titres en format XML-TEI à partir des données du site Théâtre-Classique.
 

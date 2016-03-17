@@ -8,7 +8,7 @@ Specification widget Theatre-Classique
 1.1 But du projet
 =================
 Créer un widget pour Orange Textable (v1.5.2) permettant l'importation de pièces de théâtre en format XML-TEI à partir du site `Théâtre-Classique
-<http://www.theatre-classique.org>`_.
+<http://www.theatre-classique.fr>`_.
 
 1.2 Aperçu des etapes
 =====================

@@ -59,9 +59,9 @@ image:: images/theatre_classique_minimal_version.png
 2.3 Fonctionnalités principales
 ===============================
 
-image:: images/theatre_classique_basic_settings.png
+.. image:: images/theatre_classique_basic_settings.png
 
-image:: images/theatre_classique_advanced_settings.png
+.. image:: images/theatre_classique_advanced_settings.png
 
 * permettre le choix et l'importation de multiples titres en format XML-TEI à partir des données du site Théâtre-Classique.
 

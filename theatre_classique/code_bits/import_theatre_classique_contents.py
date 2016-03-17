@@ -6,7 +6,7 @@ import urllib2
 
 import re
 
-base_url = 'http://www.theatre-classique.fr/pages/programmes/PageEdition.ph'
+base_url = 'http://www.theatre-classique.fr/pages/programmes/PageEdition.php'
 
 segmenter = Segmenter()
 processor = Processor()

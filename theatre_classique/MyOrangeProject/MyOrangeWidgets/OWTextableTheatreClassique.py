@@ -146,9 +146,9 @@ class OWTextableTheatreClassique(OWWidget):
         # If unable to connect (somehow)...
         except:
 
-            # Set Info box and widget to 'warning' state.
+            # Set Info box and widget to 'error' state.
             self.infoBox.noDataSent(
-                warning=u"Couldn't access theatre-classique website."
+                error=u"Couldn't access theatre-classique website."
             )
 
             # Reset output channel.

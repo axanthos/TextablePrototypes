@@ -14,7 +14,7 @@ setup(
     keywords=[
         'theatre',
         'theatre-classique',
-    ]
+    ],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',

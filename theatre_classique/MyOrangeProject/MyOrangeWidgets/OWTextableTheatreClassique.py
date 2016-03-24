@@ -241,7 +241,16 @@ class OWTextableTheatreClassique(OWWidget):
         self.titleLabels = sorted(
             [s.annotations['title'] for s in self.titleSeg]
         )
-
+        
+        # Add author when title is duplicated...
+        titleLabels = self.titleLabels[:]
+        for idx in xrange(len(titleLabels)):
+            titleLabel = titleLabels[idx]
+            if self.titleLabels.count(titleLabel) > 1:
+                author = self.titleSeg[idx].annotations['author']
+                titleLabels[idx] = titleLabel + " (%s)" % author
+        self.titleLabels = titleLabels
+        
         # Remove warning (if any)...
         self.error(0)
         self.warning(0)

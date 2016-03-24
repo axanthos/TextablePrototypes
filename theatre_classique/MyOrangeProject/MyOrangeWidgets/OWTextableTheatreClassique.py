@@ -233,8 +233,13 @@ class OWTextableTheatreClassique(OWWidget):
             import_annotations=False,
         )
 
-        # Populate titleLabels list with the titles that have been retrieved...
-        self.titleLabels = [s.annotations['title'] for s in self.titleSeg]
+        # Sort this segmentation alphabetically based on titles...
+        self.titleSeg.segments.sort(key=lambda s: s.annotations['title'])
+        
+        # Populate titleLabels list with the titles...
+        self.titleLabels = sorted(
+            [s.annotations['title'] for s in self.titleSeg]
+        )
 
         # Remove warning (if any)...
         self.error(0)

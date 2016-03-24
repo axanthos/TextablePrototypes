@@ -28,8 +28,6 @@ class OWTextableTheatreClassique(OWWidget):
 
     # Widget settings declaration...
     settingsList = [
-        'selectedTitleLabels',
-        'titleLabels'
         'autoSend',
         'label',
         'uuid',
@@ -46,8 +44,6 @@ class OWTextableTheatreClassique(OWWidget):
         self.outputs = [('Text data', Segmentation)]
 
         # Settings initializations...
-        self.titleLabels = list()
-        self.selectedTitleLabels = list()
         self.autoSend = True
         self.label = u'xml_tei_data'
 
@@ -57,6 +53,8 @@ class OWTextableTheatreClassique(OWWidget):
         self.uuid = getWidgetUuid(self)
 
         # Other attributes...
+        self.titleLabels = list()
+        self.selectedTitleLabels = list()
         self.segmenter = Segmenter()
         self.segmentation = Input()
         self.titleSeg = None

@@ -239,6 +239,7 @@ class OWTextableTheatreClassique(OWWidget):
         self.titleLabels = [s.annotations['title'] for s in self.titleSeg]
 
         # Remove warning (if any)...
+        self.error(0)
         self.warning(0)
 
     def onDeleteWidget(self):

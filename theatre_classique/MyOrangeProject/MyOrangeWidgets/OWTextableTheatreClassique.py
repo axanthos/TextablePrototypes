@@ -83,7 +83,7 @@ class OWTextableTheatreClassique(OWWidget):
             box=u'Titles',
             orientation='vertical',
         )
-        self.TitleListbox = OWGUI.listBox(
+        self.titleListbox = OWGUI.listBox(
             widget=titleBox,
             master=self,
             value='selectedTitleLabels',    # setting (list)
@@ -91,6 +91,7 @@ class OWTextableTheatreClassique(OWWidget):
             callback=self.sendButton.settingsChanged,
             tooltip=u"The list of titles whose content will be imported",
         )
+        self.titleListbox.setMinimumHeight(150)
         OWGUI.separator(widget=titleBox, height=3)
         OWGUI.button(
             widget=titleBox,

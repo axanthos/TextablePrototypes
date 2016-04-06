@@ -31,6 +31,9 @@ class OWTextableTheatreClassique(OWWidget):
         'autoSend',
         'label',
         'uuid',
+        'filterCriterion',
+        'filterValue',
+        'displayAdvancedSettings',
     ]
 
     def __init__(self, parent=None, signalManager=None):
@@ -46,6 +49,9 @@ class OWTextableTheatreClassique(OWWidget):
         # Settings initializations...
         self.autoSend = True
         self.label = u'xml_tei_data'
+        self.filterCriterion = u'none'
+        self.filterValue = None     
+        self.displayAdvancedSettings = False
 
         # Always end Textable widget settings with the following 3 lines...
         self.uuid = None
@@ -75,7 +81,65 @@ class OWTextableTheatreClassique(OWWidget):
             sendIfPreCallback=self.updateGUI,
         )
 
+        # The AdvancedSettings class, also from TextableUtils, facilitates
+        # the management of basic vs. advanced interface. An object from this 
+        # class (here assigned to self.advancedSettings) contains two lists 
+        # (basicWidgets and advanceWidgets), to which the corresponding
+        # widgetBoxes must be added.
+        self.advancedSettings = AdvancedSettings(
+            widget=self.controlArea,
+            master=self,
+            callback=self.sendButton.settingsChanged,
+        )
+
         # User interface...
+
+        # Advanced settings checkbox (basic/advanced interface will appear 
+        # immediately after it...
+        self.advancedSettings.draw()
+
+        # Filter box (advanced settings only)
+        filterBox = OWGUI.widgetBox(
+            widget=self.controlArea,
+            box=u'Filter',
+            orientation='vertical',
+            addSpace=True,
+        )
+        filterCriterionCombo = OWGUI.comboBox(
+            widget=filterBox,
+            master=self,
+            value='filterCriterion',
+            items=[u'author', u'year', u'genre'],
+            sendSelectedValue=True,
+            orientation='horizontal',
+            label=u'Criterion:',
+            labelWidth=180,
+            callback=self.sendButton.settingsChanged,
+            tooltip=(
+                u"Tool\n"
+                u"tips."
+            ),
+        )
+        filterCriterionCombo.setMinimumWidth(120)
+        OWGUI.separator(widget=filterBox, height=3)
+        self.FilterValueCombo = OWGUI.comboBox(
+            widget=filterBox,
+            master=self,
+            value='filterValue',
+            orientation='horizontal',
+            label=u'Author:',
+            labelWidth=180,
+            callback=self.sendButton.settingsChanged,
+            tooltip=(
+                u"Tool\n"
+                u"tips."
+            ),
+        )
+        OWGUI.separator(widget=filterBox, height=3)
+        
+        # The following lines add filterBox (and a vertical separator) to the
+        # advanced interface...
+        self.advancedSettings.advancedWidgets.append(filterBox)
 
         # Title box
         titleBox = OWGUI.widgetBox(
@@ -102,8 +166,12 @@ class OWTextableTheatreClassique(OWWidget):
         )
         OWGUI.separator(widget=titleBox, height=3)
 
+        OWGUI.separator(widget=self.controlArea, height=3)
+
         # From TextableUtils: a minimal Options box (only segmentation label).
         basicOptionsBox = BasicOptionsBox(self.controlArea, self)
+ 
+        OWGUI.separator(widget=self.controlArea, height=3)
 
         # Now Info box and Send button must be drawn...
         self.infoBox.draw()
@@ -169,7 +237,10 @@ class OWTextableTheatreClassique(OWWidget):
         
     def updateGUI(self):
         """Update GUI state"""
-        pass
+        if self.displayAdvancedSettings:
+            self.advancedSettings.setVisible(True)
+        else:
+            self.advancedSettings.setVisible(False)
 
     def getTitleListFromTheatreClassique(self):
         """Fetch titles from the Theatre-classique website"""

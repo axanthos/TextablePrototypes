@@ -5,7 +5,7 @@
 <priority>10</priority>
 """
 
-__version__ = '0.0.0001'
+__version__ = u'0.0.1'
 
 import Orange
 from OWWidget import *
@@ -14,6 +14,7 @@ import OWGUI
 from _textable.widgets.LTTL.Segmentation import Segmentation
 from _textable.widgets.LTTL.Input import Input
 from _textable.widgets.LTTL.Segmenter import Segmenter
+from _textable.widgets.LTTL.Processor import Processor
 
 from _textable.widgets.TextableUtils import *   # Provides several utilities.
 
@@ -31,13 +32,14 @@ class OWTextableTheatreClassique(OWWidget):
 
     # Widget settings declaration...
     settingsList = [
-        'autoSend',
-        'label',
-        'uuid',
-        'selectedTitleLabels',
-        'filterCriterion',
-        'filterValue',
-        'displayAdvancedSettings',
+        u'autoSend',
+        u'label',
+        u'uuid',
+        u'selectedTitles',
+        u'filterCriterion',
+        u'filterValue',
+        u'importedURLs',
+        u'displayAdvancedSettings',
     ]
 
     def __init__(self, parent=None, signalManager=None):
@@ -53,10 +55,11 @@ class OWTextableTheatreClassique(OWWidget):
         # Settings initializations...
         self.autoSend = True
         self.label = u'xml_tei_data'
-        self.filterCriterion = u'none'
-        self.filterValue = None 
+        self.filterCriterion = u'author'
+        self.filterValue = u'(all)'
         self.titleLabels = list()
-        self.selectedTitleLabels = list()
+        self.selectedTitles = list()
+        self.importedURLs = list()
         self.displayAdvancedSettings = False
 
         # Always end Textable widget settings with the following 3 lines...
@@ -66,12 +69,15 @@ class OWTextableTheatreClassique(OWWidget):
 
         # Other attributes...
         self.segmenter = Segmenter()
+        self.processor = Processor()
         self.segmentation = Input()
         self.titleSeg = None
+        self.filteredTitleSeg = None
+        self.filterValues = dict()
         self.base_url =     \
-          'http://www.theatre-classique.fr/pages/programmes/PageEdition.php'
+          u'http://www.theatre-classique.fr/pages/programmes/PageEdition.php'
         self.document_base_url =     \
-          'http://www.theatre-classique.fr/pages/'
+          u'http://www.theatre-classique.fr/pages/'
 
         # Next two instructions are helpers from TextableUtils. Corresponding
         # interface elements are declared here and actually drawn below (at
@@ -81,7 +87,7 @@ class OWTextableTheatreClassique(OWWidget):
             widget=self.controlArea,
             master=self,
             callback=self.sendData,
-            infoBoxAttribute='infoBox',
+            infoBoxAttribute=u'infoBox',
             sendIfPreCallback=self.updateGUI,
         )
 
@@ -93,7 +99,7 @@ class OWTextableTheatreClassique(OWWidget):
         self.advancedSettings = AdvancedSettings(
             widget=self.controlArea,
             master=self,
-            callback=self.sendButton.settingsChanged,
+            callback=self.updateFilterValueList,
         )
 
         # User interface...
@@ -106,18 +112,18 @@ class OWTextableTheatreClassique(OWWidget):
         filterBox = OWGUI.widgetBox(
             widget=self.controlArea,
             box=u'Filter',
-            orientation='vertical',
+            orientation=u'vertical',
         )
         filterCriterionCombo = OWGUI.comboBox(
             widget=filterBox,
             master=self,
-            value='filterCriterion',
+            value=u'filterCriterion',
             items=[u'author', u'year', u'genre'],
             sendSelectedValue=True,
-            orientation='horizontal',
+            orientation=u'horizontal',
             label=u'Criterion:',
             labelWidth=180,
-            callback=self.sendButton.settingsChanged,
+            callback=self.updateFilterValueList,
             tooltip=(
                 u"Tool\n"
                 u"tips."
@@ -125,14 +131,15 @@ class OWTextableTheatreClassique(OWWidget):
         )
         filterCriterionCombo.setMinimumWidth(120)
         OWGUI.separator(widget=filterBox, height=3)
-        self.FilterValueCombo = OWGUI.comboBox(
+        self.filterValueCombo = OWGUI.comboBox(
             widget=filterBox,
             master=self,
-            value='filterValue',
-            orientation='horizontal',
+            value=u'filterValue',
+            sendSelectedValue=True,
+            orientation=u'horizontal',
             label=u'Value:',
             labelWidth=180,
-            callback=self.sendButton.settingsChanged,
+            callback=self.updateTitleList,
             tooltip=(
                 u"Tool\n"
                 u"tips."
@@ -149,17 +156,18 @@ class OWTextableTheatreClassique(OWWidget):
         titleBox = OWGUI.widgetBox(
             widget=self.controlArea,
             box=u'Titles',
-            orientation='vertical',
+            orientation=u'vertical',
         )
         self.titleListbox = OWGUI.listBox(
             widget=titleBox,
             master=self,
-            value='selectedTitleLabels',    # setting (list)
-            labels='titleLabels',           # setting (list)
+            value=u'selectedTitles',    # setting (list)
+            labels=u'titleLabels',      # setting (list)
             callback=self.sendButton.settingsChanged,
             tooltip=u"The list of titles whose content will be imported",
         )
         self.titleListbox.setMinimumHeight(150)
+        self.titleListbox.setSelectionMode(3)
         OWGUI.separator(widget=titleBox, height=3)
         OWGUI.button(
             widget=titleBox,
@@ -196,24 +204,26 @@ class OWTextableTheatreClassique(OWWidget):
             return
         
         # Check that something has been selected...
-        if len(self.selectedTitleLabels) == 0:
+        if len(self.selectedTitles) == 0:
             self.infoBox.noDataSent(u': no title selected.')
-            self.send('Text data', None, self)
+            self.send(u'Text data', None, self)
             return
 
         # Check that label is not empty...
         if not self.label:
             self.infoBox.noDataSent(warning=u'No label was provided.')
-            self.send('Text data', None, self)
+            self.send(u'Text data', None, self)
             return
 
         # Attempt to connect to Theatre-classique...
         try:
             response = urllib2.urlopen(
-                self.document_base_url
-                + self.titleSeg[self.selectedTitleLabels[0]].annotations['url']
+                self.document_base_url + 
+                self.filteredTitleSeg[
+                    self.selectedTitles[0]
+                ].annotations[u'url']
             )
-            xml_content = unicode(response.read(), 'utf8')
+            xml_content = unicode(response.read(), u'utf8')
 
         # If unable to connect (somehow)...
         except:
@@ -224,31 +234,26 @@ class OWTextableTheatreClassique(OWWidget):
             )
 
             # Reset output channel.
-            self.send('Text data', None, self)
+            self.send(u'Text data', None, self)
             return
             
         # Store downloaded XML in segmentation attribute.
         self.segmentation.update(text=xml_content, label=self.label)
 
+        # Store imported URLs as setting.
+        self.importedURLs = [
+            self.filteredTitleSeg[self.selectedTitles[0]].annotations[u'url']
+        ]
+        
         # Set status to OK...
         message = u'1 segment (%i character@p).' % len(xml_content)
         message = pluralize(message, len(xml_content))
         self.infoBox.dataSent(message)
 
         # Send token...
-        self.send('Text data', self.segmentation, self)
+        self.send(u'Text data', self.segmentation, self)
         self.sendButton.resetSettingsChangedFlag()        
         
-    def updateGUI(self):
-        """Update GUI state"""
-        if self.displayAdvancedSettings:
-            self.advancedSettings.setVisible(True)
-        else:
-            self.advancedSettings.setVisible(False)
-            
-        if len(self.titleLabels) > 0:
-            self.selectedTitleLabels = self.selectedTitleLabels
-            
     def getTitleSeg(self):
         """Get title segmentation, either saved locally or online"""
         
@@ -264,16 +269,40 @@ class OWTextableTheatreClassique(OWWidget):
         except IOError:
             self.titleSeg = self.getTitleListFromTheatreClassique()
 
-        # Update title list and filter comboboxes (only at init and on manual
+        # Build author, year and genre lists...
+        if self.titleSeg is not None:
+            self.filterValues[u'author'] = self.processor.count_in_context(
+                units={
+                    u'segmentation': self.titleSeg, 
+                    u'annotation_key': u'author'
+                }
+            ).col_ids
+            self.filterValues[u'author'].sort()
+            self.filterValues[u'year'] = self.processor.count_in_context(
+                units={
+                    u'segmentation': self.titleSeg, 
+                    u'annotation_key': u'year'
+                }
+            ).col_ids
+            self.filterValues[u'year'].sort(key=lambda v: int(v))
+            self.filterValues[u'genre'] = self.processor.count_in_context(
+                units={
+                    u'segmentation': self.titleSeg, 
+                    u'annotation_key': u'genre'
+                }
+            ).col_ids
+            self.filterValues[u'genre'].sort()
+
+        # Update title and filter value lists (only at init and on manual
         # refresh, therefore separate from self.updateGUI).
-        self.updateLists()
+        self.updateFilterValueList()
                     
     def refreshTitleSeg(self):
         """Refresh title segmentation from website"""
         self.titleSeg = self.getTitleListFromTheatreClassique()
-        # Update title list and filter comboboxes (only at init and on manual
+        # Update title and filter value lists (only at init and on manual
         # refresh, therefore separate from self.updateGUI).
-        self.updateLists()
+        self.updateFilterValueList()
         
     def getTitleListFromTheatreClassique(self):
         """Fetch titles from the Theatre-classique website"""
@@ -302,7 +331,7 @@ class OWTextableTheatreClassique(OWWidget):
             self.titleLabels = list()
 
             # Reset output channel.
-            self.send('Text data', None, self)
+            self.send(u'Text data', None, self)
             return None
             
         # Otherwise store HTML content in LTTL Input object.
@@ -311,49 +340,49 @@ class OWTextableTheatreClassique(OWWidget):
         # Extract table containing titles from HTML.
         table_seg = self.segmenter.import_xml(
             segmentation=base_html_seg,
-            element='table',
-            conditions={'id': re.compile(r'^table_AA$')},
+            element=u'table',
+            conditions={u'id': re.compile(ur'^table_AA$')},
             remove_markup=False,
         )
 
         # Extract table lines.
         line_seg = self.segmenter.import_xml(
             segmentation=table_seg,
-            element='tr',
+            element=u'tr',
             remove_markup=False,
         )
 
         # Compile the regex that will be used to parse each line.
         field_regex = re.compile(
-            r"^\s*<td>\s*<a.+?>(.+?)</a>\s*</td>\s*"
-            r"<td>(.+?)</td>\s*"
-            r"<td.+?>\s*<a.+?>\s*(\d+?)\s*</a>\s*</td>\s*"
-            r"<td.+?>\s*(.+?)\s*</td>\s*"
-            r"<td.+?>\s*<a\s+.+?t=\.{2}/(.+?)'>\s*HTML"
+            ur"^\s*<td>\s*<a.+?>(.+?)</a>\s*</td>\s*"
+            ur"<td>(.+?)</td>\s*"
+            ur"<td.+?>\s*<a.+?>\s*(\d+?)\s*</a>\s*</td>\s*"
+            ur"<td.+?>\s*(.+?)\s*</td>\s*"
+            ur"<td.+?>\s*<a\s+.+?t=\.{2}/(.+?)'>\s*HTML"
         )
 
         # Parse each line and store the resulting segmentation in an attribute.
         titleSeg = self.segmenter.tokenize(
             segmentation=line_seg,
             regexes=[
-                (field_regex, 'Tokenize', {'author': '&1'}),
-                (field_regex, 'Tokenize', {'title': '&2'}),
-                (field_regex, 'Tokenize', {'year': '&3'}),
-                (field_regex, 'Tokenize', {'genre': '&4'}),
-                (field_regex, 'Tokenize', {'url': '&5'}),
+                (field_regex, u'Tokenize', {u'author': u'&1'}),
+                (field_regex, u'Tokenize', {u'title': u'&2'}),
+                (field_regex, u'Tokenize', {u'year': u'&3'}),
+                (field_regex, u'Tokenize', {u'genre': u'&4'}),
+                (field_regex, u'Tokenize', {u'url': u'&5'}),
             ],
             import_annotations=False,
         )
 
         # Sort this segmentation alphabetically based on titles...
-        titleSeg.segments.sort(key=lambda s: s.annotations['title'])
+        titleSeg.segments.sort(key=lambda s: s.annotations[u'title'])
         
         # Try to save list in this module's directory for future reference...
         path = os.path.dirname(
             os.path.abspath(inspect.getfile(inspect.currentframe()))
         )
         try:
-            file = open(os.path.join(path, "cached_title_list"), 'wb')
+            file = open(os.path.join(path, u"cached_title_list"), u'wb')
             pickle.dump(titleSeg, file) 
             file.close()         
         except IOError:
@@ -365,29 +394,79 @@ class OWTextableTheatreClassique(OWWidget):
         
         return titleSeg
 
-    def updateLists(self):
-        """Update lists in the interface"""
+    def updateFilterValueList(self):
+        """Update the list of filter values"""
+        
+        # In Advanced settings mode, populate filter value list...
+        if self.titleSeg is not None and self.displayAdvancedSettings:
+            self.filterValueCombo.clear()
+            self.filterValueCombo.addItem(u'(all)')
+            for filterValue in self.filterValues[self.filterCriterion]:
+                self.filterValueCombo.addItem(filterValue)
+
+        # Reset filterValue if needed...
+        if self.filterValue not in [
+            unicode(self.filterValueCombo.itemText(i)) 
+            for i in xrange(self.filterValueCombo.count())
+        ]:
+            self.filterValue = u'(all)'
+        else:
+            self.filterValue = self.filterValue
+        
+        self.updateTitleList()
+
+    def updateTitleList(self):
+        """Update the list of titles"""
         
         # If titleSeg has not been loaded for some reason, skip.
         if self.titleSeg is None:
             return
-            
+        
+        # In Advanced settings mode, get list of selected titles...
+        if self.displayAdvancedSettings and self.filterValue != u'(all)':
+            self.filteredTitleSeg, _ = self.segmenter.select(
+                segmentation=self.titleSeg,
+                regex=re.compile(ur'^%s$' % self.filterValue),
+                annotation_key=self.filterCriterion,
+            )
+        else:
+            self.filteredTitleSeg = self.titleSeg
+        
         # Populate titleLabels list with the titles...
         self.titleLabels = sorted(
-            [s.annotations['title'] for s in self.titleSeg]
+            [s.annotations[u'title'] for s in self.filteredTitleSeg]
         )
         
-        # Add author when title is duplicated...
-        titleLabels = self.titleLabels[:]
-        for idx in xrange(len(titleLabels)):
-            titleLabel = titleLabels[idx]
-            if self.titleLabels.count(titleLabel) > 1:
-                author = self.titleSeg[idx].annotations['author']
-                titleLabels[idx] = titleLabel + " (%s)" % author
-        self.titleLabels = titleLabels
+        # Add author when title is duplicated (unless criterion is 'author')...
+        if (self.filterCriterion != u'author' or self.filterValue == u'(all)'):
+            titleLabels = self.titleLabels[:]
+            for idx in xrange(len(titleLabels)):
+                titleLabel = titleLabels[idx]
+                if self.titleLabels.count(titleLabel) > 1:
+                    author = self.filteredTitleSeg[idx].annotations[u'author']
+                    titleLabels[idx] = titleLabel + " (%s)" % author
+            self.titleLabels = titleLabels
         
-        self.updateGUI()
+        # Reset selectedTitles if needed...
+        if not set(self.importedURLs).issubset(
+            set(u.annotations[u'url'] for u in self.filteredTitleSeg)
+        ):
+            self.selectedTitles = list()
+        else:
+            self.selectedTitles = self.selectedTitles
 
+        self.sendButton.settingsChanged()
+
+    def updateGUI(self):
+        """Update GUI state"""
+        if self.displayAdvancedSettings:
+            self.advancedSettings.setVisible(True)
+        else:
+            self.advancedSettings.setVisible(False)
+            
+        if len(self.titleLabels) > 0:
+            self.selectedTitles = self.selectedTitles
+            
     def onDeleteWidget(self):
         """Make sure to delete the stored segmentation data when the widget
         is deleted (overriden method)

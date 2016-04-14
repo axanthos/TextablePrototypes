@@ -10,6 +10,7 @@ __version__ = u'0.0.1'
 import Orange
 from OWWidget import *
 import OWGUI
+import PIPEcommunic
 
 from _textable.widgets.LTTL.Segmentation import Segmentation
 from _textable.widgets.LTTL.Input import Input

@@ -15,6 +15,7 @@ from _textable.widgets.LTTL.Segmentation import Segmentation
 from _textable.widgets.LTTL.Input import Input
 from _textable.widgets.LTTL.Segmenter import Segmenter
 from _textable.widgets.LTTL.Processor import Processor
+from _textable.widgets.LTTL.Recoder import Recoder
 
 from _textable.widgets.TextableUtils import *   # Provides several utilities.
 
@@ -70,7 +71,8 @@ class OWTextableTheatreClassique(OWWidget):
         # Other attributes...
         self.segmenter = Segmenter()
         self.processor = Processor()
-        self.segmentation = Input()
+        self.segmentation = None
+        self.createdInputs = list()
         self.titleSeg = None
         self.filteredTitleSeg = None
         self.filterValues = dict()
@@ -215,41 +217,79 @@ class OWTextableTheatreClassique(OWWidget):
             self.send(u'Text data', None, self)
             return
 
-        # Attempt to connect to Theatre-classique...
+        # Clear created Inputs.
+        self.clearCreatedInputs()
+        
+        # Initialize progress bar.
+        progressBar = OWGUI.ProgressBar(
+            self, 
+            iterations=len(self.selectedTitles)
+        )       
+        
+        # Attempt to connect to Theatre-classique and retrieve plays...
+        xml_contents = list()
+        annotations = list()
         try:
-            response = urllib2.urlopen(
-                self.document_base_url + 
-                self.filteredTitleSeg[
-                    self.selectedTitles[0]
-                ].annotations[u'url']
-            )
-            xml_content = unicode(response.read(), u'utf8')
+            for title in self.selectedTitles:
+                response = urllib2.urlopen(
+                    self.document_base_url + 
+                    self.filteredTitleSeg[title].annotations[u'url']
+                )
+                xml_contents.append(unicode(response.read(), u'utf8'))
+                annotations.append(
+                    self.filteredTitleSeg[title].annotations.copy()
+                )
+                progressBar.advance()   # 1 tick on the progress bar...
 
-        # If unable to connect (somehow)...
+        # If an error occurs (e.g. http error, or memory error)...
         except:
 
             # Set Info box and widget to 'error' state.
             self.infoBox.noDataSent(
-                error=u"Couldn't access theatre-classique website."
+                error=u"Couldn't download data from theatre-classique website."
             )
 
             # Reset output channel.
             self.send(u'Text data', None, self)
             return
             
-        # Store downloaded XML in segmentation attribute.
-        self.segmentation.update(text=xml_content, label=self.label)
+        # Store downloaded XML in input objects and annotate them...
+        for xml_content_idx in xrange(len(xml_contents)):
+            newInput = Input(xml_contents[xml_content_idx], self.label)
+            newInput[0].annotations = annotations[xml_content_idx]
+            self.createdInputs.append(newInput)
+            
+        # If there's only one play, the widget's output is the created Input.
+        if len(self.createdInputs) == 1:
+            self.segmentation = self.createdInputs[0]
+            
+        # Otherwise the widget's output is a concatenation...
+        else:
+            self.segmentation = self.segmenter.concatenate(
+                self.createdInputs,
+                self.label,
+                import_labels_as=None,
+            )
 
         # Store imported URLs as setting.
         self.importedURLs = [
             self.filteredTitleSeg[self.selectedTitles[0]].annotations[u'url']
         ]
         
-        # Set status to OK...
-        message = u'1 segment (%i character@p).' % len(xml_content)
-        message = pluralize(message, len(xml_content))
+        # Set status to OK and report data size...
+        message = u'%i segment@p ' % len(self.segmentation)
+        message = pluralize(message, len(self.segmentation))
+        numChars = 0
+        for segment in self.segmentation:
+            segmentLength = len(Segmentation.data[segment.address.str_index])
+            numChars += segmentLength
+        message += u'(%i character@p).' % numChars
+        message = pluralize(message, numChars)
         self.infoBox.dataSent(message)
 
+        # Clear progress bar.
+        progressBar.finish()
+        
         # Send token...
         self.send(u'Text data', self.segmentation, self)
         self.sendButton.resetSettingsChangedFlag()        
@@ -337,9 +377,13 @@ class OWTextableTheatreClassique(OWWidget):
         # Otherwise store HTML content in LTTL Input object.
         base_html_seg = Input(base_html)
 
+        # Remove accents from the data...
+        recoder = Recoder(remove_accents=True)
+        recoded_seg = recoder.apply(base_html_seg, mode=u"standard")
+
         # Extract table containing titles from HTML.
         table_seg = self.segmenter.import_xml(
-            segmentation=base_html_seg,
+            segmentation=recoded_seg,
             element=u'table',
             conditions={u'id': re.compile(ur'^table_AA$')},
             remove_markup=False,
@@ -437,15 +481,37 @@ class OWTextableTheatreClassique(OWWidget):
             [s.annotations[u'title'] for s in self.filteredTitleSeg]
         )
         
-        # Add author when title is duplicated (unless criterion is 'author')...
-        if (self.filterCriterion != u'author' or self.filterValue == u'(all)'):
-            titleLabels = self.titleLabels[:]
-            for idx in xrange(len(titleLabels)):
-                titleLabel = titleLabels[idx]
-                if self.titleLabels.count(titleLabel) > 1:
-                    author = self.filteredTitleSeg[idx].annotations[u'author']
-                    titleLabels[idx] = titleLabel + " (%s)" % author
-            self.titleLabels = titleLabels
+        # Add specification (author, year and genre, depending on criterion)...
+        titleLabels = self.titleLabels[:]
+        for idx in xrange(len(titleLabels)):
+            titleLabel = titleLabels[idx]
+            specs = list()
+            if (
+                self.displayAdvancedSettings == False or
+                self.filterCriterion != 'author' or 
+                self.filterValue == u'(all)'
+            ):
+                specs.append(
+                    self.filteredTitleSeg[idx].annotations[u'author']
+                )
+            if (
+                self.displayAdvancedSettings == False or
+                self.filterCriterion != 'year' or 
+                self.filterValue == u'(all)'
+            ):
+                specs.append(
+                    self.filteredTitleSeg[idx].annotations[u'year']
+                )
+            if (
+                self.displayAdvancedSettings == False or
+                self.filterCriterion != 'genre' or 
+                self.filterValue == u'(all)'
+            ):
+                specs.append(
+                    self.filteredTitleSeg[idx].annotations[u'genre']
+                )
+            titleLabels[idx] = titleLabel + " (%s)" % "; ".join(specs)
+        self.titleLabels = titleLabels
         
         # Reset selectedTitles if needed...
         if not set(self.importedURLs).issubset(
@@ -467,11 +533,23 @@ class OWTextableTheatreClassique(OWWidget):
         if len(self.titleLabels) > 0:
             self.selectedTitles = self.selectedTitles
             
+    def clearCreatedInputs(self):
+        """Delete all Input objects that have been created."""
+        # Delete strings...
+        for i in self.createdInputs:
+            i.clear()
+        # Empty list of created inputs.
+        del self.createdInputs[:]
+        # Delete those created inputs that are at the end of the string store.
+        for i in reversed(xrange(len(Segmentation.data))):
+            if Segmentation.data[i] is None:
+                Segmentation.data.pop(i)
+            else:
+                break
+
     def onDeleteWidget(self):
-        """Make sure to delete the stored segmentation data when the widget
-        is deleted (overriden method)
-        """
-        self.segmentation.clear()
+        """Free memory when widget is deleted (overriden method)"""
+        self.clearCreatedInputs()
 
     # The following two methods need to be copied (without any change) in
     # every Textable widget...

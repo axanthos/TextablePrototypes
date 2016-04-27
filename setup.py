@@ -30,7 +30,7 @@ from setuptools import setup, find_packages
 NAME = 'Orange-Textable-Prototypes'
 DOCUMENTATION_NAME = 'Orange Textable Prototypes'
 
-VERSION = '0.0.1'
+VERSION = '0.1.0'
 
 DESCRIPTION = 'Extra widgets for the Orange Textable text analysis package.'
 LONG_DESCRIPTION = open(os.path.join(os.path.dirname(__file__), 'README.rst')).read()

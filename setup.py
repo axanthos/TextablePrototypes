@@ -51,7 +51,6 @@ KEYWORDS = (
 CLASSIFIERS = (
     'Development Status :: 3 - Alpha',
     'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-    'Programming Language :: Python :: 2 :: only',
     'Programming Language :: Python :: 2.6',
     'Programming Language :: Python :: 2.7',
     'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',

@@ -37,7 +37,7 @@ LONG_DESCRIPTION = open(os.path.join(os.path.dirname(__file__), 'README.rst')).r
 AUTHOR = 'University of Lausanne'
 AUTHOR_EMAIL = 'aris.xanthos@unil.ch'
 URL = 'https://github.com/axanthos/TextablePrototypes'
-DOWNLOAD_URL = 'https://github.com/axanthos/TextablePrototypes/downloads'
+DOWNLOAD_URL = 'https://pypi.python.org/pypi/Orange-Textable-Prototypes/0.1.0'
 LICENSE = 'GPLv3'
 
 KEYWORDS = (

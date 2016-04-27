@@ -1,11 +1,11 @@
 """
 <name>Theatre Classique</name>
-<description>Import XML-TEI data from Theatre-classique website</description>
-<icon>path_to_icon.svg</icon>
+<description>Import XML-TEI data from theatre-classique website</description>
+<icon>icons/Theatre_Classique.png</icon>
 <priority>10</priority>
 """
 
-__version__ = u'0.0.1'
+__version__ = u'0.1.0'
 
 import Orange
 from OWWidget import *

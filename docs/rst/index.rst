@@ -22,7 +22,7 @@ The project is brought to the community by the `department of language and
 information sciences (SLI) <http://www.unil.ch/sli>`_ at the `University of
 Lausanne <http://www.unil.ch>`_  It is hosted at 
 `<https://github.com/axanthos/TextablePrototypes>`_, and the documentation 
-can be found at `<http://orange-textable-prototypes.readthedocs.org/>`_.
+can be found at `<http://textable-prototypes.readthedocs.org/>`_.
 
 Widgets
 -------

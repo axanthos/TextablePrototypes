@@ -1,5 +1,5 @@
 doc_root = [
-    ("http://textable-prototypes.readthedocs.org/en/latest/", None),
+    ("http://textable-prototypes.readthedocs.io/en/latest/", None),
 ]
 
 

@@ -79,7 +79,6 @@ given author/genre/title.
 .. figure:: figures/theatre_classique_advanced_interface.png
     :align: center
     :alt: Advanced interface of the Theatre Classique widget
-    :scale: 80%
     
     Figure 2: **Theatre Classique** widget (advanced interface).
 

@@ -21,7 +21,7 @@ You should have received a copy of the GNU General Public License
 along with Textable Prototypes v0.1. If not, see http://www.gnu.org/licenses
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 import os
 
@@ -30,7 +30,7 @@ from setuptools import setup, find_packages
 NAME = 'Orange-Textable-Prototypes'
 DOCUMENTATION_NAME = 'Orange Textable Prototypes'
 
-VERSION = '0.1.1'
+VERSION = '0.1.2'
 
 DESCRIPTION = 'Extra widgets for the Orange Textable text analysis package.'
 LONG_DESCRIPTION = open(os.path.join(os.path.dirname(__file__), 'README.rst')).read()

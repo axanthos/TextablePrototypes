@@ -79,8 +79,8 @@ Dernière version en Python 2 disponible
 
 2.1 Mock-up de l'interface
 ==========================
-.. image:: img/interface0.2.png
-.. image:: img/interface0.2adv.png
+.. image:: images/WebSearch_interface0.2.png
+.. image:: images/WebSearch_interface0.2adv.png
 
 
 2.2 Fonctionnalités minimales

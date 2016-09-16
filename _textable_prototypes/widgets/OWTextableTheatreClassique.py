@@ -1,21 +1,44 @@
 """
+Class OWTextableTheatreClassique
+Copyright 2016 University of Lausanne
+-----------------------------------------------------------------------------
+This file is part of the Orange-Textable-Prototypes package v0.1.
+
+Orange-Textable-Prototypes v0.1 is free software: you can redistribute it 
+and/or modify it under the terms of the GNU General Public License as published 
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Orange-Textable-Prototypes v0.1 is distributed in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Orange-Textable-Prototypes v0.1. If not, see 
+<http://www.gnu.org/licenses/>.
+"""
+
+__version__ = u'0.1.2'
+__author__ = "Aris Xanthos"
+__maintainer__ = "Aris Xanthos"
+__email__ = "aris.xanthos@unil.ch"
+
+"""
 <name>Theatre Classique</name>
 <description>Import XML-TEI data from theatre-classique website</description>
 <icon>icons/Theatre_Classique.png</icon>
 <priority>10</priority>
 """
 
-__version__ = u'0.1.0'
-
 import Orange
 from OWWidget import *
 import OWGUI
 
-from _textable.widgets.LTTL.Segmentation import Segmentation
-from _textable.widgets.LTTL.Input import Input
-from _textable.widgets.LTTL.Segmenter import Segmenter
-from _textable.widgets.LTTL.Processor import Processor
-from _textable.widgets.LTTL.Recoder import Recoder
+from LTTL.Segmentation import Segmentation
+from LTTL.Input import Input
+import LTTL.Segmenter as Segmenter
+import LTTL.Processor as Processor
 
 from _textable.widgets.TextableUtils import *   # Provides several utilities.
 
@@ -47,7 +70,14 @@ class OWTextableTheatreClassique(OWWidget):
         """Widget creator."""
 
         # Standard call to creator of base class (OWWidget).
-        OWWidget.__init__(self, parent, signalManager, wantMainArea=0)
+        OWWidget.__init__(            
+            self,
+            parent,
+            signalManager,
+            wantMainArea=0,
+            wantStateInfoWidget=0,
+        )
+
 
         # Channel definitions...
         self.inputs = []
@@ -69,8 +99,6 @@ class OWTextableTheatreClassique(OWWidget):
         self.uuid = getWidgetUuid(self)
 
         # Other attributes...
-        self.segmenter = Segmenter()
-        self.processor = Processor()
         self.segmentation = None
         self.createdInputs = list()
         self.titleSeg = None
@@ -124,11 +152,10 @@ class OWTextableTheatreClassique(OWWidget):
             sendSelectedValue=True,
             orientation=u'horizontal',
             label=u'Criterion:',
-            labelWidth=180,
+            labelWidth=120,
             callback=self.updateFilterValueList,
             tooltip=(
-                u"Tool\n"
-                u"tips."
+                u"Please select a criterion for searching the title list\n"
             ),
         )
         filterCriterionCombo.setMinimumWidth(120)
@@ -140,12 +167,9 @@ class OWTextableTheatreClassique(OWWidget):
             sendSelectedValue=True,
             orientation=u'horizontal',
             label=u'Value:',
-            labelWidth=180,
+            labelWidth=120,
             callback=self.updateTitleList,
-            tooltip=(
-                u"Tool\n"
-                u"tips."
-            ),
+            tooltip=(u"Please select a value for the chosen criterion."),
         )
         OWGUI.separator(widget=filterBox, height=3)
         
@@ -182,14 +206,11 @@ class OWTextableTheatreClassique(OWWidget):
 
         OWGUI.separator(widget=self.controlArea, height=3)
 
-        # From TextableUtils: a minimal Options box (only segmentation label).
-        basicOptionsBox = BasicOptionsBox(self.controlArea, self)
- 
-        OWGUI.separator(widget=self.controlArea, height=3)
+        OWGUI.rubber(self.controlArea)
 
         # Now Info box and Send button must be drawn...
-        self.infoBox.draw()
         self.sendButton.draw()
+        self.infoBox.draw()
         
         # This initialization step needs to be done after infoBox has been 
         # drawn (because getTitleSeg may need to display an error message).
@@ -197,6 +218,9 @@ class OWTextableTheatreClassique(OWWidget):
 
         # Send data if autoSend.
         self.sendButton.sendIf()
+
+        self.setMinimumWidth(350)
+        self.adjustSizeWithTimer()
 
     def sendData(self):
         """Compute result of widget processing and send to output"""
@@ -207,13 +231,10 @@ class OWTextableTheatreClassique(OWWidget):
         
         # Check that something has been selected...
         if len(self.selectedTitles) == 0:
-            self.infoBox.noDataSent(u': no title selected.')
-            self.send(u'Text data', None, self)
-            return
-
-        # Check that label is not empty...
-        if not self.label:
-            self.infoBox.noDataSent(warning=u'No label was provided.')
+            self.infoBox.setText(
+                u'Please select one or more titles.', 
+                'warning'
+            )
             self.send(u'Text data', None, self)
             return
 
@@ -245,18 +266,18 @@ class OWTextableTheatreClassique(OWWidget):
         except:
 
             # Set Info box and widget to 'error' state.
-            self.infoBox.noDataSent(
-                error=u"Couldn't download data from theatre-classique website."
+            self.infoBox.self.infoBox.setText(
+                u"Couldn't download data from theatre-classique website.", 
+                'error'
             )
 
             # Reset output channel.
             self.send(u'Text data', None, self)
             return
             
-        # Store downloaded XML in input objects and annotate them...
+        # Store downloaded XML in input objects...
         for xml_content_idx in xrange(len(xml_contents)):
-            newInput = Input(xml_contents[xml_content_idx], self.label)
-            newInput[0].annotations = annotations[xml_content_idx]
+            newInput = Input(xml_contents[xml_content_idx], self.captionTitle)
             self.createdInputs.append(newInput)
             
         # If there's only one play, the widget's output is the created Input.
@@ -265,27 +286,33 @@ class OWTextableTheatreClassique(OWWidget):
             
         # Otherwise the widget's output is a concatenation...
         else:
-            self.segmentation = self.segmenter.concatenate(
+            self.segmentation = Segmenter.concatenate(
                 self.createdInputs,
-                self.label,
+                self.captionTitle,
                 import_labels_as=None,
             )
 
+        # Annotate segments...
+        for idx, segment in enumerate(self.segmentation):
+            segment.annotations.update(annotations[idx])
+            self.segmentation[idx] = segment
+            
         # Store imported URLs as setting.
         self.importedURLs = [
             self.filteredTitleSeg[self.selectedTitles[0]].annotations[u'url']
         ]
         
         # Set status to OK and report data size...
-        message = u'%i segment@p ' % len(self.segmentation)
+        message = u'%i segment@p sent to output ' % len(self.segmentation)
         message = pluralize(message, len(self.segmentation))
         numChars = 0
         for segment in self.segmentation:
-            segmentLength = len(Segmentation.data[segment.address.str_index])
+            segmentLength = len(Segmentation.get_data(segment.str_index))
             numChars += segmentLength
         message += u'(%i character@p).' % numChars
         message = pluralize(message, numChars)
-        self.infoBox.dataSent(message)
+        self.infoBox.setText(message)
+        progressBar.finish()
 
         # Clear progress bar.
         progressBar.finish()
@@ -302,7 +329,7 @@ class OWTextableTheatreClassique(OWWidget):
             os.path.abspath(inspect.getfile(inspect.currentframe()))
         )
         try:
-            file = open(os.path.join(path, "cached_title_list"),'r')
+            file = open(os.path.join(path, "cached_title_list"),'rb')
             self.titleSeg = pickle.load(file)
             file.close()
         # Else try to load list from Theatre-classique and build new seg...
@@ -311,21 +338,21 @@ class OWTextableTheatreClassique(OWWidget):
 
         # Build author, year and genre lists...
         if self.titleSeg is not None:
-            self.filterValues[u'author'] = self.processor.count_in_context(
+            self.filterValues[u'author'] = Processor.count_in_context(
                 units={
                     u'segmentation': self.titleSeg, 
                     u'annotation_key': u'author'
                 }
             ).col_ids
             self.filterValues[u'author'].sort()
-            self.filterValues[u'year'] = self.processor.count_in_context(
+            self.filterValues[u'year'] = Processor.count_in_context(
                 units={
                     u'segmentation': self.titleSeg, 
                     u'annotation_key': u'year'
                 }
             ).col_ids
             self.filterValues[u'year'].sort(key=lambda v: int(v))
-            self.filterValues[u'genre'] = self.processor.count_in_context(
+            self.filterValues[u'genre'] = Processor.count_in_context(
                 units={
                     u'segmentation': self.titleSeg, 
                     u'annotation_key': u'genre'
@@ -378,22 +405,19 @@ class OWTextableTheatreClassique(OWWidget):
         base_html_seg = Input(base_html)
 
         # Remove accents from the data...
-        recoder = Recoder(remove_accents=True)
-        recoded_seg = recoder.apply(base_html_seg, mode=u"standard")
+        recoded_seg = Segmenter.recode(base_html_seg, remove_accents=True)
 
         # Extract table containing titles from HTML.
-        table_seg = self.segmenter.import_xml(
+        table_seg = Segmenter.import_xml(
             segmentation=recoded_seg,
             element=u'table',
             conditions={u'id': re.compile(ur'^table_AA$')},
-            remove_markup=False,
         )
 
         # Extract table lines.
-        line_seg = self.segmenter.import_xml(
+        line_seg = Segmenter.import_xml(
             segmentation=table_seg,
             element=u'tr',
-            remove_markup=False,
         )
 
         # Compile the regex that will be used to parse each line.
@@ -406,20 +430,21 @@ class OWTextableTheatreClassique(OWWidget):
         )
 
         # Parse each line and store the resulting segmentation in an attribute.
-        titleSeg = self.segmenter.tokenize(
+        titleSeg = Segmenter.tokenize(
             segmentation=line_seg,
             regexes=[
-                (field_regex, u'Tokenize', {u'author': u'&1'}),
-                (field_regex, u'Tokenize', {u'title': u'&2'}),
-                (field_regex, u'Tokenize', {u'year': u'&3'}),
-                (field_regex, u'Tokenize', {u'genre': u'&4'}),
-                (field_regex, u'Tokenize', {u'url': u'&5'}),
+                (field_regex, u'tokenize', {u'author': u'&1'}),
+                (field_regex, u'tokenize', {u'title': u'&2'}),
+                (field_regex, u'tokenize', {u'year': u'&3'}),
+                (field_regex, u'tokenize', {u'genre': u'&4'}),
+                (field_regex, u'tokenize', {u'url': u'&5'}),
             ],
             import_annotations=False,
+            merge_duplicates=True,
         )
 
         # Sort this segmentation alphabetically based on titles...
-        titleSeg.segments.sort(key=lambda s: s.annotations[u'title'])
+        # titleSeg.segments.sort(key=lambda s: s.annotations[u'title']) # TODO
         
         # Try to save list in this module's directory for future reference...
         path = os.path.dirname(
@@ -427,7 +452,7 @@ class OWTextableTheatreClassique(OWWidget):
         )
         try:
             file = open(os.path.join(path, u"cached_title_list"), u'wb')
-            pickle.dump(titleSeg, file) 
+            pickle.dump(titleSeg, file, -1) 
             file.close()         
         except IOError:
             pass
@@ -468,7 +493,7 @@ class OWTextableTheatreClassique(OWWidget):
         
         # In Advanced settings mode, get list of selected titles...
         if self.displayAdvancedSettings and self.filterValue != u'(all)':
-            self.filteredTitleSeg, _ = self.segmenter.select(
+            self.filteredTitleSeg, _ = Segmenter.select(
                 segmentation=self.titleSeg,
                 regex=re.compile(ur'^%s$' % self.filterValue),
                 annotation_key=self.filterCriterion,
@@ -483,8 +508,7 @@ class OWTextableTheatreClassique(OWWidget):
         
         # Add specification (author, year and genre, depending on criterion)...
         titleLabels = self.titleLabels[:]
-        for idx in xrange(len(titleLabels)):
-            titleLabel = titleLabels[idx]
+        for idx, titleLabel in enumerate(titleLabels):
             specs = list()
             if (
                 self.displayAdvancedSettings == False or
@@ -535,24 +559,27 @@ class OWTextableTheatreClassique(OWWidget):
             
     def clearCreatedInputs(self):
         """Delete all Input objects that have been created."""
-        # Delete strings...
         for i in self.createdInputs:
-            i.clear()
-        # Empty list of created inputs.
+            Segmentation.set_data(i[0].str_index, None)
         del self.createdInputs[:]
-        # Delete those created inputs that are at the end of the string store.
-        for i in reversed(xrange(len(Segmentation.data))):
-            if Segmentation.data[i] is None:
-                Segmentation.data.pop(i)
-            else:
-                break
 
     def onDeleteWidget(self):
         """Free memory when widget is deleted (overriden method)"""
         self.clearCreatedInputs()
 
-    # The following two methods need to be copied (without any change) in
+    # The following methods need to be copied (without any change) in
     # every Textable widget...
+
+    def adjustSizeWithTimer(self):
+        qApp.processEvents()
+        QTimer.singleShot(50, self.adjustSize)
+
+    def setCaption(self, title):
+        if 'captionTitle' in dir(self) and title != 'Orange Widget':
+            OWWidget.setCaption(self, title)
+            self.sendButton.settingsChanged()
+        else:
+            OWWidget.setCaption(self, title)
 
     def getSettings(self, *args, **kwargs):
         """Read settings, taking into account version number (overriden)"""

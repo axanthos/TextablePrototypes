@@ -21,8 +21,6 @@ You should have received a copy of the GNU General Public License
 along with Textable Prototypes v0.1. If not, see http://www.gnu.org/licenses
 """
 
-__version__ = "0.1.2"
-
 import os
 
 from setuptools import setup, find_packages
@@ -30,14 +28,14 @@ from setuptools import setup, find_packages
 NAME = 'Orange-Textable-Prototypes'
 DOCUMENTATION_NAME = 'Orange Textable Prototypes'
 
-VERSION = '0.1.2'
+VERSION = '0.1.4'
 
-DESCRIPTION = 'Extra widgets for the Orange Textable text analysis package.'
+DESCRIPTION = 'Extra widgets for the Textable text analysis package.'
 LONG_DESCRIPTION = open(os.path.join(os.path.dirname(__file__), 'README.rst')).read()
 AUTHOR = 'University of Lausanne'
 AUTHOR_EMAIL = 'aris.xanthos@unil.ch'
 URL = 'https://github.com/axanthos/TextablePrototypes'
-DOWNLOAD_URL = 'https://pypi.python.org/pypi/Orange-Textable-Prototypes/0.1.0'
+DOWNLOAD_URL = 'https://pypi.python.org/pypi/Orange-Textable-Prototypes'
 LICENSE = 'GPLv3'
 
 KEYWORDS = (
@@ -72,7 +70,9 @@ PACKAGE_DATA = {
 
 INSTALL_REQUIRES = (
     'Orange',
-    'Orange-Textable',
+    'Orange-Textable>=2.0a3',
+    'LTTL>=2.0a4',
+    'Pattern>=2.6',
     'setuptools',
 ),
 

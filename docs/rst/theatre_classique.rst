@@ -14,6 +14,11 @@ Theatre Classique
 Import theater plays from the `theatre-classique 
 <http://www.theatre-classique.fr>`_ website (in TEI-XML).
 
+Author
+------
+
+Aris Xanthos
+
 Signals
 -------
 
@@ -91,31 +96,23 @@ Messages
 Information
 ~~~~~~~~~~~
 
-*Data correctly sent to output: <n> segments (<m> characters).*
+*<n> segments sent to output (<m> characters).*
     This confirms that the widget has operated properly.
 
-*Settings were* (or *Input has*) *changed, please click 'Send' when ready.*
-    Settings and/or input have changed but the **Send automatically** checkbox
-    has not been selected, so the user is prompted to click the **Send**
-    button (or equivalently check the box) in order for computation and data
-    emission to proceed.
-
-*No data sent to output yet: no title selected.*
-    The widget instance is not able to emit data to output because no theatre
-    play has been selected.
-
-*No data sent to output yet, see 'Widget state' below.*
-    A problem with the instance's parameters and/or input data prevents it
-    from operating properly, and additional diagnostic information can be
-    found in the **Widget state** box at the bottom of the instance's
-    interface (see `Warnings`_ and `Errors`_ below).
 
 Warnings
 ~~~~~~~~
 
-*No label was provided.*
-    A label must be entered in the **Output segmentation label** field in
-    order for computation and data emission to proceed.
+*Settings were changed, please click 'Send' when ready.*
+    Settings have changed but the **Send automatically** checkbox
+    has not been selected, so the user is prompted to click the **Send**
+    button (or equivalently check the box) in order for computation and data
+    emission to proceed.
+
+*Please select one or more titles.*
+    The widget instance is not able to emit data to output because no theatre
+    play has been selected.
+
     
 Errors
 ~~~~~~

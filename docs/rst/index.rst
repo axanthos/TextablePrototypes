@@ -28,7 +28,8 @@ Widgets
 -------
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
 
     Theatre Classique <theatre_classique>
+    Web Search <websearch>
 

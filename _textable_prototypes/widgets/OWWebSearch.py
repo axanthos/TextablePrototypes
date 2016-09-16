@@ -1,21 +1,54 @@
 """
-<name>WebSearch</name>
+Class OWWebSearch
+Copyright 2016 University of Lausanne
+-----------------------------------------------------------------------------
+This file is part of the Orange-Textable-Prototypes package v0.1.
+
+Orange-Textable-Prototypes v0.1 is free software: you can redistribute it 
+and/or modify it under the terms of the GNU General Public License as published 
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Orange-Textable-Prototypes v0.1 is distributed in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Orange-Textable-Prototypes v0.1. If not, see 
+<http://www.gnu.org/licenses/>.
+"""
+
+__version__ = u'0.1.2'
+__author__ = "Bassim Matar, Gregory Thonney, Cyril Nghiem, Jean Galleno, Taar Rusconi"
+__maintainer__ = "Aris Xanthos"
+__email__ = "aris.xanthos@unil.ch"
+
+"""
+<name>Web Search</name>
 <description>Get corpus from Wikipedia, Twitter and Bing</description>
 <icon>icons/icon_WebSearch_transpa.png</icon>
 <priority>11</priority> 
 """
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 import Orange
 from OWWidget import *
 import OWGUI
-from pattern.web import Twitter, Wikipedia, Bing, SEARCH, HTTP401Authentication, HTTP400BadRequest
-from _textable.widgets.LTTL.Segmentation import Segmentation
-from _textable.widgets.LTTL.Input import Input
-from _textable.widgets.LTTL.Segmenter import Segmenter
+from pattern.web import (
+    Twitter, 
+    Wikipedia, 
+    Bing, 
+    SEARCH,
+    HTTP401Authentication, 
+    HTTP400BadRequest,
+    SearchEngineLimitError
+)
+from LTTL.Segmentation import Segmentation
+from LTTL.Input import Input
+import LTTL.Segmenter as Segmenter
 from _textable.widgets.TextableUtils import *
-
 
 class OWWebSearch(OWWidget):
     """Orange widget to get corpus from pattern web"""
@@ -46,8 +79,13 @@ class OWWebSearch(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         """Widget creator."""
         
-        OWWidget.__init__(self, parent, signalManager, wantMainArea=0)
-
+        OWWidget.__init__(            
+            self,
+            parent,
+            signalManager,
+            wantMainArea=0,
+            wantStateInfoWidget=0,
+        )
       
         # DEFINE OUTPUT
         
@@ -57,7 +95,7 @@ class OWWebSearch(OWWidget):
 
         # Settings and other attribute initializations...
 
-        self.segment_label = u'WebSearch_data'
+        self.segment_label = u'search_results'
         self.nb_tweet = 50
         self.include_RT = False
         self.word_to_search = ''
@@ -107,10 +145,11 @@ class OWWebSearch(OWWidget):
         # CONFIG BOXES
  
         optionsBox = OWGUI.widgetBox(self.controlArea, 'Options')
-
-        self.twitterBox = OWGUI.widgetBox(self.controlArea, 'Twitter')
+        OWGUI.separator(widget=self.controlArea, height=3)
+        self.twitterBox = OWGUI.widgetBox(self.controlArea, 'Twitter')      
         self.wikipediaBox = OWGUI.widgetBox(self.controlArea, 'Wikipedia')
         self.bingBox = OWGUI.widgetBox(self.controlArea, 'Bing')
+        OWGUI.separator(widget=self.controlArea, height=3)
 
         self.serviceBoxes = [self.twitterBox, self.wikipediaBox, self.bingBox]
 
@@ -133,6 +172,8 @@ class OWWebSearch(OWWidget):
             ),
         )
 
+        OWGUI.separator(widget=optionsBox, height=3)
+
         OWGUI.comboBox(
             widget              = optionsBox,
             master              = self,
@@ -147,7 +188,9 @@ class OWWebSearch(OWWidget):
                     u"Select language."
             ),
         )
-
+        
+        OWGUI.separator(widget=optionsBox, height=3)
+        
         OWGUI.lineEdit(
             widget              = optionsBox,
             master              = self,
@@ -157,17 +200,8 @@ class OWWebSearch(OWWidget):
             callback            = self.sendButton.settingsChanged,
             labelWidth          = 160,
         )
-        
-        segment_label_input = OWGUI.lineEdit(
-            widget=optionsBox,
-            master=self,
-            value='segment_label',
-            orientation='horizontal',
-            label=u'Output segmentation label:',
-            labelWidth=160,
-            callback=self.sendButton.settingsChanged,
-        )
 
+        OWGUI.separator(widget=optionsBox, height=3)
 
 
 
@@ -186,6 +220,8 @@ class OWWebSearch(OWWidget):
             step=1,
         )
 
+        OWGUI.separator(widget=self.twitterBox, height=3)
+
         OWGUI.checkBox(
             widget              = self.twitterBox,
             master              = self,
@@ -198,8 +234,7 @@ class OWWebSearch(OWWidget):
             ),
         )
 
-
-
+        OWGUI.separator(widget=self.twitterBox, height=3)
 
         # TWITTER LICENSE KEY BOX
 
@@ -217,6 +252,8 @@ class OWWebSearch(OWWidget):
 
         self.twitterLicenseBox = OWGUI.indentedBox(self.twitterBox, sep=20)
 
+        OWGUI.separator(widget=self.twitterLicenseBox, height=3)
+
         OWGUI.lineEdit(
             widget=self.twitterLicenseBox,
             master=self,
@@ -229,6 +266,8 @@ class OWWebSearch(OWWidget):
                     u"Your twitter Consumer key."
             ),
         )
+
+        OWGUI.separator(widget=self.twitterLicenseBox, height=3)
 
         OWGUI.lineEdit(
             widget=self.twitterLicenseBox,
@@ -243,6 +282,8 @@ class OWWebSearch(OWWidget):
             ),
         )
 
+        OWGUI.separator(widget=self.twitterLicenseBox, height=3)
+
         OWGUI.lineEdit(
             widget=self.twitterLicenseBox,
             master=self,
@@ -256,6 +297,8 @@ class OWWebSearch(OWWidget):
             ),
         )
 
+        OWGUI.separator(widget=self.twitterLicenseBox, height=3)
+
         OWGUI.lineEdit(
             widget=self.twitterLicenseBox,
             master=self,
@@ -268,6 +311,7 @@ class OWWebSearch(OWWidget):
                     u"Your private twitter access token secret."
             ),
         )
+        OWGUI.separator(widget=self.twitterLicenseBox, height=3)
 
 
 
@@ -286,6 +330,8 @@ class OWWebSearch(OWWidget):
             ),
         )
 
+        OWGUI.separator(widget=self.wikipediaBox, height=3)
+
         OWGUI.comboBox(
             widget              = self.wikipediaBox,
             master              = self,
@@ -301,6 +347,7 @@ class OWWebSearch(OWWidget):
             ),
         )
 
+        OWGUI.separator(widget=self.wikipediaBox, height=3)
 
 
         # BING BOX
@@ -318,63 +365,68 @@ class OWWebSearch(OWWidget):
             step=1,
         )
 
+        OWGUI.separator(widget=self.bingBox, height=3)
 
         # CONFIG WIDGET
         
-        self.infoBox.draw()
+        OWGUI.rubber(self.controlArea)
         self.sendButton.draw()
+        self.infoBox.draw()
         self.set_service_box_visibility()
         self.changeTwitterLicenseKeyBox()
         self.sendButton.sendIf()
-        self.resize(10, 10)
-        
+        self.adjustSizeWithTimer()        
 
 
     # GET DATA FROM PATTERN WEB
 
     def get_tweets(self, search, nb, include_RT, useKey, keys):
 
-    	if not useKey:
-    		keys = None
+        if not useKey:
+            keys = None
 
         twitter = Twitter(
-        	language=self.dico_lang[self.language],
-        	license=keys
+            language=self.dico_lang[self.language],
+            license=keys
         )
 
-        tweets = []
+        tweets = list()
         if not include_RT:
             for tweet in twitter.search(search, start=1, count=nb*3):
                 if not tweet.text.startswith('RT'):
                     tweet_input = Input(tweet.text)
                     annotations = {
-                        'source' : 'Twitter',
+                        'source': 'Twitter',
                         'author': tweet.author,
                         'date': tweet.date,
                         'url': tweet.url,
-                        'search' : search,
+                        'search': search,
                     }
-                    tweet_input.segments[0].annotations.update(annotations)
+                    segment = tweet_input[0]
+                    segment.annotations.update(annotations)
+                    tweet_input[0] = segment
                     tweets.append(tweet_input)
-                if len(tweets)==nb:
+                if len(tweets) == nb:
                     break
         else:        
             for tweet in twitter.search(search, start=1, count=nb):
                 tweet_input = Input(tweet.text)
                 annotations = {
-                    'source' : 'Twitter',
+                    'source': 'Twitter',
                     'author': tweet.author,
                     'date': tweet.date,
                     'url': tweet.url,
-                    'search' : search,
+                    'search': search,
                 }
-                tweet_input.segments[0].annotations.update(annotations)
+                segment = tweet_input[0]
+                segment.annotations.update(annotations)
+                tweet_input[0] = segment
                 tweets.append(tweet_input)
         return tweets
     
 
     def get_wiki_article(self, search, separate_in_section=False, type_of_text=u'Plain text'):
-        segments = []
+        segments = list()
         article = Wikipedia(language=self.dico_lang[self.language]).search(search, cached=False)
         if article:
             if separate_in_section:
@@ -385,12 +437,14 @@ class OWWebSearch(OWWidget):
                         wiki_article = Input(section.html)
 
                     annotations = {
-                        'source' : 'Wikipedia',
+                        'source': 'Wikipedia',
                         'section title': section.title,
                         'section level': section.level,
-                        'search' : search,
+                        'search': search,
                     }
-                    wiki_article.segments[0].annotations.update(annotations)
+                    segment = wiki_article[0]
+                    segment.annotations.update(annotations)
+                    wiki_article[0] = segment
                     segments.append(wiki_article)
             else:
                 if type_of_text == u'Plain text':
@@ -398,26 +452,30 @@ class OWWebSearch(OWWidget):
                 else:
                     wiki_article = Input(article.html)
                 annotations = {
-                        'source' : 'Wikipedia',
-                        'search' : search,
+                        'source': 'Wikipedia',
+                        'search': search,
                     }
-                wiki_article.segments[0].annotations.update(annotations)
+                segment = wiki_article[0]
+                segment.annotations.update(annotations)
+                wiki_article[0] = segment
                 segments.append(wiki_article)
         return segments
 
 
     def get_bing_entries(self, search, nb):
         bing = Bing(language=self.dico_lang[self.language])
-        entries = []
+        entries = list()
         for result in bing.search(search, start=1, count=nb, cached=False):
             entry_input = Input(result.text)
             annotations = {
-                'source' : 'Bing',
+                'source': 'Bing',
                 'title': result.title,
                 'url': result.url,
-                'search' : search,
+                'search': search,
             }
-            entry_input.segments[0].annotations.update(annotations)
+            segment = entry_input[0]
+            segment.annotations.update(annotations)
+            entry_input[0] = segment
             entries.append(entry_input)
         return entries
 
@@ -433,72 +491,89 @@ class OWWebSearch(OWWidget):
         self.clearCreatedInputs()
         
         if self.service == u'Twitter':
-        	try:
-	            createdInputs = self.get_tweets(
-	                self.word_to_search,
-	                self.nb_tweet,
-	                self.include_RT,
-	                self.useTwitterLicenseKey,
-	                (
-	                	self.twitterLicenseKeysConsumerKey,
-	                	self.twitterLicenseKeysConsumerSecret,
-	                	(
-	                		self.twitterLicenseKeysAccessToken,
-	                		self.twitterLicenseKeysAccessTokenSecret
-	                	)
-	                )
-	            )
-	        except (HTTP401Authentication, HTTP400BadRequest):
-	        	self.infoBox.noDataSent(error = u'Wrong keys for Twitter api.')
-	        	self.send(u'Text data', None, self)
-	        	return False
+            try:
+                self.createdInputs = self.get_tweets(
+                    self.word_to_search,
+                    self.nb_tweet,
+                    self.include_RT,
+                    self.useTwitterLicenseKey,
+                    (
+                        self.twitterLicenseKeysConsumerKey,
+                        self.twitterLicenseKeysConsumerSecret,
+                        (
+                            self.twitterLicenseKeysAccessToken,
+                            self.twitterLicenseKeysAccessTokenSecret
+                        )
+                    )
+                )
+            except (HTTP401Authentication, HTTP400BadRequest):
+                self.infoBox.setText(
+                    u'Please enter valid Twitter api keys.',
+                    u'error',
+                )
+                self.send(u'Text data', None, self)
+                return False
+            except SearchEngineLimitError:
+                self.infoBox.setText(
+                    u'Twitter search limit has been exceeded.',
+                    u'error',
+                )
+                self.send(u'Text data', None, self)
+                return False
 
 
         elif self.service == u'Wikipedia':
-            createdInputs = self.get_wiki_article(
+            self.createdInputs = self.get_wiki_article(
                 self.word_to_search,
                 self.wiki_section,
                 self.wiki_type_of_text
             )
 
         elif self.service == u'Bing':
-            createdInputs = self.get_bing_entries(
+            self.createdInputs = self.get_bing_entries(
                 self.word_to_search,
                 self.nb_bing_entry
             )
 
-        # Check that label is not empty...
-        if not self.segment_label:
-            self.infoBox.noDataSent(warning=u'No label was provided.')
+        
+
+        if len(self.createdInputs) == 0:
+            self.infoBox.setText(
+                u'Please try to change query or settings.',
+                u'warning',
+            )
             self.send(u'Text data', None, self)
             return False
 
-        if len(createdInputs) == 0:
-        	self.infoBox.noDataSent('\nPlease try to change query or settings.')
-        	self.send(u'Text data', None, self)
-	        return False
-
-	    # Initialize progress bar
+        # Initialize progress bar
         progressBar = OWGUI.ProgressBar(
             self, 
             iterations=50
         )
 
-        message = u'%i segment@p.' % len(createdInputs)
-        message = pluralize(message, len(createdInputs))
-        self.infoBox.dataSent(message)
+        output_segmentation = Segmenter.concatenate(
+            self.createdInputs, 
+            self.captionTitle, 
+            import_labels_as=None
+        )
 
-        segmenter = Segmenter()
-        out_object = segmenter.concatenate(createdInputs, self.segment_label, import_labels_as=None)
-        a = 0
-        while a < 50:
+        message = u'%i segment@p sent to output ' % len(output_segmentation)
+        message = pluralize(message, len(output_segmentation))
+        numChars = 0
+        for segment in output_segmentation:
+            segmentLength = len(Segmentation.get_data(segment.str_index))
+            numChars += segmentLength
+        message += u'(%i character@p).' % numChars
+        message = pluralize(message, numChars)
+        self.infoBox.setText(message)
+
+        for _ in xrange(50):
             progressBar.advance()
-            a += 1
 
         # Clear progress bar.
         progressBar.finish()
 
-        self.send('Text data', out_object, self)
+        self.send('Text data', output_segmentation, self)
     
         self.sendButton.resetSettingsChangedFlag()
         
@@ -522,25 +597,47 @@ class OWWebSearch(OWWidget):
         elif self.service == u'Bing':
             self.bingBox.setVisible(True)
 
+        self.adjustSizeWithTimer()
 
     def changeTwitterLicenseKeyBox(self):
 
-    	self.sendButton.settingsChanged()
+        self.sendButton.settingsChanged()
 
-    	if self.useTwitterLicenseKey:
+        if self.useTwitterLicenseKey:
             self.twitterLicenseBox.setVisible(True)
         else:
-        	self.twitterLicenseBox.setVisible(False)
+            self.twitterLicenseBox.setVisible(False)
 
+        self.adjustSizeWithTimer()
 
      
+
+    def clearCreatedInputs(self):
+        """Delete all Input objects that have been created."""
+        for i in self.createdInputs:
+            Segmentation.set_data(i[0].str_index, None)
+        del self.createdInputs[:]
+
+    def onDeleteWidget(self):
+        """Free memory when widget is deleted (overriden method)"""
+        self.clearCreatedInputs()
+
+    def adjustSizeWithTimer(self):
+        qApp.processEvents()
+        QTimer.singleShot(50, self.adjustSize)
+
+    def setCaption(self, title):
+        if 'captionTitle' in dir(self) and title != 'Orange Widget':
+            OWWidget.setCaption(self, title)
+            self.sendButton.settingsChanged()
+        else:
+            OWWidget.setCaption(self, title)
 
     def getSettings(self, *args, **kwargs):
         """Read settings, taking into account version number (overriden)"""
         settings = OWWidget.getSettings(self, *args, **kwargs)
         settings["settingsDataVersion"] = __version__.split('.')[:2]
         return settings
-
 
     def setSettings(self, settings):
         """Write settings, taking into account version number (overriden)"""
@@ -549,21 +646,6 @@ class OWWebSearch(OWWidget):
             settings = settings.copy()
             del settings["settingsDataVersion"]
             OWWidget.setSettings(self, settings)
-
-
-    def clearCreatedInputs(self):
-        """Delete all Input objects that have been created."""
-        # Delete strings...
-        for i in self.createdInputs:
-            i.clear()
-        # Empty list of created inputs.
-        del self.createdInputs[:]
-        # Delete those created inputs that are at the end of the string store.
-        for i in reversed(xrange(len(Segmentation.data))):
-            if Segmentation.data[i] is None:
-                Segmentation.data.pop(i)
-            else:
-                break
 
 
 if __name__=='__main__':

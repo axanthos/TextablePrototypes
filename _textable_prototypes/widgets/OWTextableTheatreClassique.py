@@ -19,7 +19,7 @@ along with Orange-Textable-Prototypes v0.1. If not, see
 <http://www.gnu.org/licenses/>.
 """
 
-__version__ = u'0.2.0'
+__version__ = u'0.2.1'
 __author__ = "Aris Xanthos"
 __maintainer__ = "Aris Xanthos"
 __email__ = "aris.xanthos@unil.ch"

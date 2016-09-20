@@ -360,6 +360,9 @@ class OWTextableTheatreClassique(OWWidget):
             ).col_ids
             self.filterValues[u'genre'].sort()
 
+        # Sort the segmentation alphabetically based on titles (nasty hack!)...
+        self.titleSeg.buffer.sort(key=lambda s: s.annotations[u'title'])
+        
         # Update title and filter value lists (only at init and on manual
         # refresh, therefore separate from self.updateGUI).
         self.updateFilterValueList()
@@ -443,9 +446,6 @@ class OWTextableTheatreClassique(OWWidget):
             merge_duplicates=True,
         )
 
-        # Sort this segmentation alphabetically based on titles...
-        # titleSeg.segments.sort(key=lambda s: s.annotations[u'title']) # TODO
-        
         # Try to save list in this module's directory for future reference...
         path = os.path.dirname(
             os.path.abspath(inspect.getfile(inspect.currentframe()))

@@ -266,7 +266,7 @@ class OWTextableTheatreClassique(OWWidget):
         except:
 
             # Set Info box and widget to 'error' state.
-            self.infoBox.self.infoBox.setText(
+            self.infoBox.setText(
                 u"Couldn't download data from theatre-classique website.", 
                 'error'
             )

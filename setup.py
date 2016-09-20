@@ -28,7 +28,7 @@ from setuptools import setup, find_packages
 NAME = 'Orange-Textable-Prototypes'
 DOCUMENTATION_NAME = 'Orange Textable Prototypes'
 
-VERSION = '0.1.4'
+VERSION = '0.1.5'
 
 DESCRIPTION = 'Extra widgets for the Textable text analysis package.'
 LONG_DESCRIPTION = open(os.path.join(os.path.dirname(__file__), 'README.rst')).read()

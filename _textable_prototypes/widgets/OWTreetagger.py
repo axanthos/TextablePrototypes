@@ -23,7 +23,7 @@ along with Orange-Textable-Prototypes v0.1. If not, see
 <http://www.gnu.org/licenses/>.
 """
 
-__version__ = u'0.0.1'
+__version__ = u'0.0.2'
 __author__ = "Xavier Barros"
 __maintainer__ = "Xavier Barros"
 __email__ = "xavier.barros@unil.ch"
@@ -430,21 +430,20 @@ class OWTreetagger(OWWidget):
                 iterations = 5
             )
             
-            # ajouter la seguementation du seguement
+            # Copie de la segmentation avec ajout d'une annotation...
+            copy_of_input_seg = Segmentation()
+            copy_of_input_seg.label = self.inputData.label
             for seg_idx, segment in enumerate(self.inputData):
-                attr = " ".join(["%s='%s'" % \
-                item for item in segment.annotations.items()])
-                for itema in segment.annotations.items():
-                    print itema
-                print attr
+                attr = " ".join(
+                    ["%s='%s'" % item for item in segment.annotations.items()]
+                )
                 segment.annotations["tt_xb"] = attr
-                self.inputData[seg_idx] = segment
-                # si on re-utilise le widget il faut supprimer l'annotation tt_xb sinon bug car déjà existante
+                copy_of_input_seg.append(segment)
             
             # avancer la progressBar d'un cran
             self.progressBar.advance()
 
-            concatenated_text = self.inputData.to_string(
+            concatenated_text = copy_of_input_seg.to_string(
                 formatting="<xb_tt %(tt_xb)s>%(__content__)s</xb_tt>",
                 display_all=True,
             )
